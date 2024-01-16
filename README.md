@@ -30,7 +30,7 @@ A GET method has been used for translator root that is __/translate/{phrase}__. 
 ##### Request
 input text = Data is most valueable asset in computer world
 
-request url = http://0.0.0.0:8888/translate/Data is most valueable asset in computer world.
+request url = http://0.0.0.0:8090/translate/Data is most valueable asset in computer world.
 
 ##### Response
 
