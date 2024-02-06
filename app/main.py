@@ -1,9 +1,8 @@
-from transformers import GPT2LMHeadModel, GPT2ForTokenClassification
-from transformers import MT5ForConditionalGeneration, MT5Tokenizer
 from fastapi import FastAPI, status
 import uvicorn
 import stanza
-
+from transformers import AutoTokenizer
+from optimum.onnxruntime import ORTModelForSeq2SeqLM
 
 
 
@@ -33,15 +32,18 @@ tags_dict = {
 }
 
 
-model_size = "base"
+# model_size = "base"
 
-model_name = f"persiannlp/mt5-{model_size}-parsinlu-translation_en_fa"
-tokenizer = MT5Tokenizer.from_pretrained(model_name)
-model = MT5ForConditionalGeneration.from_pretrained(model_name)
+# model_name = f"persiannlp/mt5-{model_size}-parsinlu-translation_en_fa"
+# tokenizer = MT5Tokenizer.from_pretrained(model_name)
+# model = MT5ForConditionalGeneration.from_pretrained(model_name)
+
+tokenizer = AutoTokenizer.from_pretrained("quantized_model_translator", use_cache=False)
+model = ORTModelForSeq2SeqLM.from_pretrained("quantized_model_translator", use_cache=False)
 
 def run_model(input_string, **generator_args):
-    input_ids = tokenizer.encode(input_string, return_tensors="pt")
-    res = model.generate(input_ids, **generator_args)
+    inputs = tokenizer(input_string, return_tensors="pt")
+    res = model.generate(**inputs, **generator_args)
     output = tokenizer.batch_decode(res, skip_special_tokens=True)
     
     return output
@@ -77,7 +79,7 @@ def analyse(org_doc:str):
                             temp_dict["number"] = "جمع"
                 final_doc["words_list"].append(temp_dict)
 
-    gen_params = {"max_new_tokens":40, "top_k":30, "top_p":0.95, "no_repeat_ngram_size":2}
+    gen_params = {"max_new_tokens":128, "top_k":30, "top_p":0.95, "no_repeat_ngram_size":2}
     sentence_meaning = run_model(org_doc.strip(), **gen_params)
     final_doc["sent_meaning"] = sentence_meaning
     return final_doc
@@ -88,9 +90,9 @@ def analyse(org_doc:str):
 app = FastAPI()
 
 @app.get("/translate/{phrase}", status_code=status.HTTP_200_OK)
-def translate(phrase:str):
+async def translate(phrase:str):
     phrase = phrase.strip(" ")
-    res = analyse(phrase)
+    res =  analyse(phrase)
     return {"translate": res}
 
 

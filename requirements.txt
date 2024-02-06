@@ -9,3 +9,6 @@ torchvision
 fastapi[all]
 pydantic
 stanza
+onnx
+onnxruntime
+optimum[exporters]
